@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>נקי! מונה גמילה</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&family=Secular+One&display=swap">
+<style>
+/* Layout: manga page — ink-bordered panels on a halftone sheet, one hero panel with the mascot + live counter */
+:root{
+  --paper:#f4f5fb; --panel:#ffffff; --ink:#17131f; --muted:#615d74;
+  --sakura:#ff3d7f; --sakura-soft:#ffe0ea; --mint:#00a884; --mint-soft:#d9f6ee;
+  --sun:#ffbf1f; --sun-soft:#fff2cc; --lock:#d9d7e3; --dot:rgba(23,19,31,.07);
+  --skin:#ffe3d3; --hair:#2b2350; --hair-hi:#5a4ba3;
+  --f-display:"Secular One","Rubik",system-ui,sans-serif;
+  --f-body:"Rubik",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#110f18; --panel:#1b1826; --ink:#f1edfb; --muted:#a6a2bb;
+  --sakura:#ff5f96; --sakura-soft:#3a1a29; --mint:#2fe0ae; --mint-soft:#11302a;
+  --sun:#ffcf4d; --sun-soft:#352c12; --lock:#353145; --dot:rgba(241,237,251,.06);
+  --skin:#ffd9c4; --hair:#3b3170; --hair-hi:#7b6bd0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#110f18; --panel:#1b1826; --ink:#f1edfb; --muted:#a6a2bb;
+  --sakura:#ff5f96; --sakura-soft:#3a1a29; --mint:#2fe0ae; --mint-soft:#11302a;
+  --sun:#ffcf4d; --sun-soft:#352c12; --lock:#353145; --dot:rgba(241,237,251,.06);
+  --skin:#ffd9c4; --hair:#3b3170; --hair-hi:#7b6bd0; color-scheme:dark}
+
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.app{direction:rtl;max-width:980px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:18px 40px;display:grid;gap:18px;
+  background-image:radial-gradient(var(--dot) 1.2px,transparent 1.3px);background-size:9px 9px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;line-height:1.15}
+h2{font-size:1.35rem}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--sakura);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+.panel{background:var(--panel);border:2.5px solid var(--ink);border-radius:6px;box-shadow:5px 5px 0 var(--ink);padding:16px;min-width:0}
+.panel-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.panel-title small{color:var(--muted)}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px}
+.logo h1{font-size:2rem;letter-spacing:.5px}
+.logo h1 span{color:var(--sakura)}
+.logo p{margin:0;color:var(--muted);font-size:.9rem}
+.total{font-family:var(--f-display);background:var(--mint-soft);border:2px solid var(--ink);border-radius:999px;padding:6px 14px;font-size:1rem}
+.total b{color:var(--mint);font-weight:400}
+
+.example-bar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--sun-soft);border:2px dashed var(--ink);border-radius:6px;padding:10px 14px}
+
+/* tabs */
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{border:2px solid var(--ink);background:var(--panel);border-radius:999px;padding:6px 14px;display:flex;gap:6px;align-items:center;font-weight:500}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--panel)}
+.tab.add{border-style:dashed}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:0;padding:0;overflow:hidden}
+.stage{position:relative;min-height:300px;display:grid;place-items:end center;
+  background:repeating-conic-gradient(from 0deg at 50% 60%,var(--sakura-soft) 0deg 4deg,var(--panel) 4deg 10deg);border-left:2.5px solid var(--ink)}
+.mascot{width:min(230px,80%);cursor:pointer;transition:transform .25s;filter:drop-shadow(3px 3px 0 var(--ink))}
+.mascot:hover{transform:translateY(-4px) rotate(-2deg)}
+.mascot.bounce{animation:bounce .5s}
+@keyframes bounce{30%{transform:translateY(-14px) scale(1.04)}60%{transform:translateY(2px)}}
+.bubble{position:absolute;top:14px;right:14px;left:14px;background:var(--panel);border:2.5px solid var(--ink);border-radius:18px;padding:10px 14px;font-weight:500;font-size:.98rem;z-index:2}
+.bubble::after{content:"";position:absolute;bottom:-13px;left:50%;width:18px;height:18px;background:var(--panel);border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:rotate(45deg)}
+.bubble .who{display:block;color:var(--sakura);font-size:.75rem;letter-spacing:.06em;font-weight:700}
+.counter{padding:18px;display:grid;gap:14px;align-content:start}
+.counter .eyebrow{color:var(--muted);font-size:.85rem;letter-spacing:.04em}
+.counter .name{font-size:1.6rem}
+.clock{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;direction:rtl}
+.clock div{border:2px solid var(--ink);border-radius:6px;text-align:center;padding:8px 2px}
+.clock b{display:block;font-family:var(--f-display);font-size:clamp(1.6rem,6vw,2.6rem);font-weight:400;line-height:1;font-variant-numeric:tabular-nums}
+.clock span{font-size:.75rem;color:var(--muted)}
+.clock .days{background:var(--sakura);color:#fff;border-color:var(--ink)}
+.clock .days span{color:#fff}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.stat{border-top:2px solid var(--ink);padding-top:6px}
+.stat span{display:block;font-size:.8rem;color:var(--muted)}
+.stat b{font-family:var(--f-display);font-weight:400;font-size:1.45rem;font-variant-numeric:tabular-nums}
+.stat.money b{color:var(--mint)}
+.stat.life b{color:var(--sakura)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:2.5px solid var(--ink);border-radius:6px;padding:9px 16px;font-weight:700;background:var(--panel);box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.btn.sos{background:var(--sakura);color:#fff}
+.btn.ghost{box-shadow:none;border-width:2px;font-weight:500}
+.confirm{border:2px dashed var(--sakura);border-radius:6px;padding:10px;display:grid;gap:8px}
+
+/* grid of panels */
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+
+/* buy list */
+.buy{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.buy div{border:2px solid var(--ink);border-radius:6px;padding:10px;text-align:center;display:grid;gap:2px}
+.buy .e{font-size:2rem;line-height:1.1}
+.buy b{font-family:var(--f-display);font-weight:400;font-size:1.4rem;font-variant-numeric:tabular-nums}
+.buy small{color:var(--muted);font-size:.78rem}
+.buy .zero{opacity:.45}
+
+/* milestones */
+.next{background:var(--sakura-soft);border:2px solid var(--ink);border-radius:6px;padding:10px 12px;margin-bottom:12px}
+.bar{height:12px;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--panel);margin-top:6px}
+.bar i{display:block;height:100%;background:repeating-linear-gradient(-45deg,var(--sakura) 0 8px,#ff7aa6 8px 16px);transition:width .6s}
+.miles{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:330px;overflow:auto}
+.miles li{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;padding:6px 4px;border-bottom:1px dashed var(--lock)}
+.miles .t{font-size:.78rem;color:var(--muted);display:block}
+.miles li.done .chk{background:var(--mint);color:#fff;border-color:var(--ink)}
+.miles li:not(.done){color:var(--muted)}
+.chk{width:24px;height:24px;border:2px solid var(--lock);border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:900}
+
+/* badges */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
+.badge{display:grid;justify-items:center;gap:4px;text-align:center;font-size:.8rem}
+.badge .disc{width:72px;height:72px;border-radius:50%;border:2.5px solid var(--ink);display:grid;place-items:center;font-size:2rem;position:relative;
+  background:radial-gradient(circle at 35% 30%,#fff8 0 18%,transparent 19%),var(--sun)}
+.badge.locked .disc{background:var(--lock);filter:grayscale(1);opacity:.6}
+.badge.locked{color:var(--muted)}
+.badge b{font-weight:700}
+
+/* stickers (funny panels) */
+.stickers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.stickers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sticker{border:2.5px solid var(--ink);border-radius:4px;background:var(--panel);overflow:hidden;display:grid;transform:rotate(var(--r,0deg));transition:transform .2s}
+.sticker:hover{transform:rotate(0) scale(1.03)}
+.sticker .pic{aspect-ratio:4/3;max-width:100%;display:grid;place-items:center;font-size:3rem;border-bottom:2.5px solid var(--ink);
+  background:radial-gradient(var(--dot) 1.5px,transparent 1.6px) 0 0/7px 7px,var(--c,var(--sakura-soft))}
+.sticker p{margin:0;padding:8px 10px;font-weight:500;font-size:.88rem;line-height:1.35}
+
+/* form */
+form.setup{display:grid;gap:12px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{display:grid;gap:4px;font-size:.85rem;font-weight:500}
+input,select{border:2px solid var(--ink);border-radius:6px;padding:8px 10px;background:var(--panel);min-width:0;width:100%;box-sizing:border-box}
+.price{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.price input{width:90px}
+.hint{color:var(--muted);font-size:.82rem;margin:0}
+
+/* SOS overlay */
+.overlay{position:fixed;inset:0;background:rgba(10,8,16,.72);display:grid;place-items:center;z-index:50;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sosbox{direction:rtl;max-width:440px;width:100%;max-height:100%;overflow:auto;display:grid;gap:14px;text-align:center}
+.breath{width:170px;height:170px;margin:6px auto;border-radius:50%;border:3px solid var(--ink);display:grid;place-items:center;font-family:var(--f-display);font-size:1.3rem;
+  background:radial-gradient(circle,var(--sakura-soft),var(--panel));transform:scale(.7);transition:transform 4s ease-in-out}
+.breath.in{transform:scale(1)}
+.breath.out{transition-duration:6s;transform:scale(.7)}
+.help{background:var(--sun-soft);border:2px solid var(--ink);border-radius:6px;padding:10px;font-size:.88rem;text-align:right}
+.help b{user-select:all}
+
+footer{color:var(--muted);font-size:.8rem;text-align:center;display:grid;gap:4px}
+footer a{color:inherit}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
+.toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 18px;border-radius:999px;z-index:70;font-weight:500;direction:rtl;max-width:calc(100% - 32px)}
+
+@media (max-width:720px){
+  .hero{grid-template-columns:1fr}
+  .stage{border-left:0;border-bottom:2.5px solid var(--ink);min-height:270px}
+  .grid2{grid-template-columns:1fr}
+  .logo h1{font-size:1.6rem}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="app" dir="rtl" lang="he">
+  <header class="top">
+    <div class="logo">
+      <div>
+        <h1>נקי<span>!</span> מונה גמילה</h1>
+        <p>כל שנייה נקייה נספרת. גם הכסף.</p>
+      </div>
+    </div>
+    <div class="total" id="total">סה״כ נחסך: <b class="num">₪0</b></div>
+  </header>
+
+  <div class="example-bar" id="exampleBar" hidden>
+    <span>👀 אלה נתוני דוגמה כדי שתראה איך זה נראה. ההתקדמות שלך עוד לא כאן.</span>
+    <button class="btn" id="startMine" type="button">להתחיל משלי</button>
+  </div>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="ההתמכרויות שלי"></nav>
+
+  <main id="main" style="display:grid;gap:18px"></main>
+
+  <section class="panel" id="setupPanel" hidden>
+    <div class="panel-title"><h2 id="setupTitle">מעקב חדש</h2><small>הנתונים נשמרים רק בטלפון שלך</small></div>
+    <form class="setup" id="setup">
+      <div class="row">
+        <label for="fType">ממה אתה נגמל?
+          <select id="fType"></select>
+        </label>
+        <label for="fName" id="nameWrap">שם (אופציונלי)
+          <input id="fName" type="text" placeholder="למשל: סיגריות">
+        </label>
+        <label for="fDate">מתי הפסקת?
+          <input id="fDate" type="datetime-local" required>
+        </label>
+      </div>
+      <div class="row">
+        <label for="fPerDay"><span id="perDayLbl">כמה ביום?</span>
+          <input id="fPerDay" type="number" min="0" step="any" required>
+        </label>
+        <label>מחיר
+          <span class="price">
+            <input id="fPrice" type="number" min="0" step="any" required aria-label="מחיר בשקלים"> ₪ ל-
+            <input id="fQty" type="number" min="0.01" step="any" required aria-label="כמות"> <span id="unitLbl">יח׳</span>
+          </span>
+        </label>
+      </div>
+      <p class="hint" id="fHint"></p>
+      <div class="actions">
+        <button class="btn sos" type="submit" id="saveBtn">יאללה, מתחילים</button>
+        <button class="btn ghost" type="button" id="cancelSetup">ביטול</button>
+        <button class="btn ghost" type="button" id="deleteItem" hidden>מחק מעקב</button>
+      </div>
+    </form>
+  </section>
+
+  <footer>
+    <span>נקי-צ׳אן היא דמות מקורית. הנתונים הבריאותיים הם הערכות כלליות ולא תחליף לייעוץ רפואי.</span>
+    <span>צריך לדבר עם מישהו? ער״ן: <b>1201</b> (24/7, אנונימי)</span>
+  </footer>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+(() => {
+const DAY = 864e5, HOUR = 36e5, MIN = 6e4;
+
+/* ---------- addiction catalogue ---------- */
+const TYPES = {
+  cig: { label:"סיגריות", emoji:"🚬", unit:"סיגריות", perDayLbl:"כמה סיגריות ביום?", perDay:20, price:38, qty:20, qtyUnit:"סיגריות",
+    hint:"חפיסה של 20 בערך 38 ₪. מחקר של UCL (2024) מעריך שכל סיגריה לוקחת כ-20 דקות חיים.", lifeMin:20,
+    miles:[[20*MIN,"הדופק ולחץ הדם מתחילים לרדת"],[12*HOUR,"רמת הפחמן החד-חמצני בדם חוזרת לנורמה"],[2*DAY,"חוש הטעם והריח מתחילים להתעורר"],[3*DAY,"הניקוטין יצא מהגוף, הנשימה קלה יותר"],[14*DAY,"זרימת הדם משתפרת, הליכה מהירה כבר פחות מתנשפת"],[30*DAY,"פחות שיעול, הריאות מנקות את עצמן"],[90*DAY,"תפקוד הריאות משתפר משמעותית"],[365*DAY,"הסיכון למחלות לב יורד בערך בחצי"],[5*365*DAY,"הסיכון לשבץ יורד משמעותית"],[10*365*DAY,"הסיכון לסרטן ריאות בערך בחצי ממעשן"]],
+    lines:["הריאות שלך שולחות לך מכתב תודה 💌","אתה נושם כמו גיבור בפרק האחרון!","כל שקל שחסכת הוא שקל שלא עלה בעשן. מילולית.","הקפה של הבוקר בלי סיגריה? מוזר. אבל אתה חזק יותר מזה."] },
+  weed: { label:"גראס", emoji:"🌿", unit:"גרם", perDayLbl:"כמה גרם ביום?", perDay:1, price:300, qty:10, qtyUnit:"גרם",
+    hint:"10 גרם ב-300 ₪ = 30 ₪ לגרם.",
+    miles:[[1*DAY,"עצבנות וקושי להירדם, זה נורמלי ועובר"],[3*DAY,"שיא תסמיני הגמילה. מכאן זה רק משתפר"],[7*DAY,"התיאבון והשינה מתחילים להתאזן"],[14*DAY,"רוב התסמינים הפיזיים חלפו, החלומות חוזרים (ומשוגעים)"],[30*DAY,"הראש צלול יותר, אצל רוב האנשים ה-THC כבר יצא"],[90*DAY,"שיפור בזיכרון, ריכוז ומוטיבציה"]],
+    lines:["החלומות חוזרים. תתכונן לסרטים מוזרים בלילה 😅","הראש שלך מתחיל להיות צלול כמו שמיים אחרי גשם.","אין חטיפים בלילה? רגע… דווקא יש. מגיע לך.","הארנק שלך: 'סוף סוף מישהו חושב עליי'."] },
+  meth: { label:"קריסטל מת׳", emoji:"💎", unit:"גרם", perDayLbl:"כמה גרם ביום?", perDay:0.25, price:400, qty:1, qtyUnit:"גרם",
+    hint:"גרם ב-400 ₪. גמילה מקריסטל קשה גם נפשית. ליווי מקצועי (רופא משפחה / קופת חולים) עושה הבדל ענק.",
+    miles:[[1*DAY,"ה'קראש': עייפות ורעב. לישון ולאכול זה בדיוק מה שצריך"],[3*DAY,"השינה מתחילה לחזור לקצב"],[14*DAY,"התסמינים החריפים נחלשים"],[30*DAY,"התשוקה פוחתת, המצב רוח מתחיל להתייצב"],[90*DAY,"שיפור ניכר בשינה, אנרגיה וריכוז"],[180*DAY,"המוח ממשיך לבנות מחדש את מערכת הדופמין"],[425*DAY,"מחקרים הראו התאוששות גדולה של מערכת הדופמין אחרי כ-14 חודשים"]],
+    lines:["המוח שלך בונה את עצמו מחדש. זה לוקח זמן, ואתה עושה את זה.","יום קשה? גם גיבורי אנימה מפסידים קרבות ועדיין מנצחים בסוף.","לישון, לאכול, לשתות מים. זה כל הסוד של היום.","אם החושך כבד, תתקשר לער״ן 1201. זה חלק מהניצחון."] },
+  vape: { label:"וייפ", emoji:"💨", unit:"פודים", perDayLbl:"כמה פודים ביום?", perDay:0.5, price:30, qty:1, qtyUnit:"פוד",
+    hint:"פוד בערך 30 ₪.",
+    miles:[[1*DAY,"הניקוטין בדם יורד"],[3*DAY,"שיא החשק. מכאן הוא נחלש"],[14*DAY,"פחות חשק, יותר אנרגיה"],[30*DAY,"הנשימה והסיבולת משתפרות"]],
+    lines:["ענן? רק בשמיים מעכשיו ☁️","אתה כבר לא מכונת עשן. אתה אדם."] },
+  alcohol: { label:"אלכוהול", emoji:"🍺", unit:"משקאות", perDayLbl:"כמה משקאות ביום?", perDay:3, price:25, qty:1, qtyUnit:"משקה",
+    hint:"בירה בבר בערך 25 ₪. אם שתית הרבה כל יום, גמילה פתאומית צריכה ליווי רפואי.",
+    miles:[[1*DAY,"רמת הסוכר בדם מתאזנת"],[3*DAY,"השינה מתחילה להשתפר"],[14*DAY,"הקיבה נרגעת, העור נראה טוב יותר"],[30*DAY,"הכבד מתחיל להתאושש"],[90*DAY,"לחץ דם ואנרגיה משתפרים"]],
+    lines:["בוקר בלי הנגאובר. זה מה שנקרא מתנה 🎁","מים זה המשקה הרשמי של גיבורים."] },
+  custom: { label:"אחר", emoji:"⭐", unit:"יח׳", perDayLbl:"כמה ביום?", perDay:1, price:10, qty:1, qtyUnit:"יח׳", hint:"",
+    miles:[[1*DAY,"יום ראשון מאחוריך"],[7*DAY,"שבוע שלם!"],[30*DAY,"חודש של שליטה"],[90*DAY,"הרגל חדש נבנה"]],
+    lines:["כל יום נקי הוא נקודה לטובתך."] }
+};
+const COMMON_LINES = ["הכוח שלך עלה ל-9000!","פרק חדש: הגיבור מסרב לפיתוי. הקהל מריע!","חשק? תעשה פוזה של גיבור אנימה ותשתה כוס מים.","את זה לא מראים בטריילר, אבל אתה הדמות הראשית.","תלחץ עליי שוב, יש לי עוד המון משפטים 😤"];
+
+const BADGES = [[DAY,"🌱","יום ראשון"],[3*DAY,"🔥","3 ימים"],[7*DAY,"⚔️","שבוע"],[14*DAY,"🛡️","שבועיים"],[30*DAY,"🏅","חודש"],[90*DAY,"🐉","3 חודשים"],[180*DAY,"👑","חצי שנה"],[365*DAY,"🌸","שנה!"]];
+
+const BUY = [["🧆","פיתה פלאפל",20],["🌯","שווארמה בלאפה",45],["🍕","פיצה משפחתית",65],["🍣","ארוחת סושי",150],["🎬","כרטיס קולנוע",48],["✈️","טיסה לאילת",300],["🎮","PS5",2200],["📱","אייפון חדש",4500]];
+
+const STICKERS = [
+  ["🫁✨","הריאות שלך אחרי שבוע: 'איזה אוויר זה? זה מותר?'","var(--mint-soft)","-2deg"],
+  ["🚬😭","הסיגריה במגירה: 'נחזור להיות ביחד?' אתה: 'סין ציאו.'","var(--sakura-soft)","1.5deg"],
+  ["🐷💰","הקופה מתמלאת. החזיר מרוצה. אתה מרוצה.","var(--sun-soft)","-1deg"],
+  ["🦸‍♂️⚡","מצב גיבור: פעיל. בוס הסופי: החשק של 4 בצהריים.","var(--mint-soft)","2deg"],
+  ["😴🌙","שינה אמיתית. בלי לחפש מצית בשלוש בלילה.","var(--sakura-soft)","-1.5deg"],
+  ["🧠🔧","המוח שלך: 'אני בשיפוצים, תודה על הסבלנות'","var(--sun-soft)","1deg"]
+];
+
+const FUN = ["תשתה כוס מים קרים, עד הסוף.","תעשה 10 סקוואטים. כן, עכשיו.","תשלח הודעה למישהו שאתה אוהב.","תאכל משהו חמוץ או חריף.","תצא להליכה קצרה של 5 דקות.","תצחצח שיניים. אף אחד לא רוצה לקלקל טעם של מנטה."];
+
+/* ---------- storage ---------- */
+const KEY = "naki-tracker-v1";
+const store = {
+  load(){ try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } },
+  save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+};
+function exampleState(){
+  const now = Date.now();
+  return { example:true, active:"ex1", items:[
+    { id:"ex1", type:"cig", name:"סיגריות", start: now - 12*DAY - 5*HOUR - 17*MIN, perDay:20, price:38, qty:20, best:12*DAY, seen:[] },
+    { id:"ex2", type:"weed", name:"גראס", start: now - 41*DAY - 3*HOUR, perDay:1, price:300, qty:10, best:41*DAY, seen:[] },
+    { id:"ex3", type:"meth", name:"קריסטל", start: now - 4*DAY - 9*HOUR, perDay:0.25, price:400, qty:1, best:4*DAY, seen:[] }
+  ]};
+}
+let state = store.load() || exampleState();
+state.items = state.items || [];
+// mark already-unlocked badges as seen so confetti only fires on new ones
+state.items.forEach(it => { it.seen = it.seen || []; if (state.example) it.seen = BADGES.map(b=>b[0]).filter(t => Date.now()-it.start >= t); });
+const save = () => store.save(state);
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtMoney = n => "₪" + Math.floor(n).toLocaleString("he-IL");
+const fmtNum = (n,d=0) => n.toLocaleString("he-IL",{maximumFractionDigits:d,minimumFractionDigits:d});
+const pad = n => String(n).padStart(2,"0");
+const active = () => state.items.find(i => i.id === state.active) || state.items[0];
+function calc(it){
+  const ms = Math.max(0, Date.now() - it.start);
+  const days = ms / DAY;
+  const units = days * it.perDay;
+  const money = units * (it.price / it.qty);
+  const t = TYPES[it.type];
+  const lifeMin = t.lifeMin ? units * t.lifeMin : 0;
+  return { ms, days, units, money, lifeMin };
+}
+function durText(ms){
+  const d = Math.floor(ms/DAY), h = Math.floor(ms%DAY/HOUR), m = Math.floor(ms%HOUR/MIN);
+  if (d >= 365) return fmtNum(d/365,1) + " שנים";
+  if (d >= 1) return d + " ימים" + (h ? " ו-" + h + " שעות" : "");
+  if (h >= 1) return h + " שעות" + (m ? " ו-" + m + " דקות" : "");
+  return Math.max(1,m) + " דקות";
+}
+function lifeText(min){
+  if (min < 60) return Math.floor(min) + " דק׳";
+  if (min < 60*24) return fmtNum(min/60,1) + " שעות";
+  return fmtNum(min/1440,1) + " ימים";
+}
+
+/* ---------- mascot (original chibi character, Nikki-chan) ---------- */
+function mascotSVG(mood){
+  const eyes = {
+    normal:`<g><ellipse cx="76" cy="128" rx="13" ry="17" fill="var(--hair)"/><ellipse cx="124" cy="128" rx="13" ry="17" fill="var(--hair)"/>
+      <ellipse cx="76" cy="132" rx="9" ry="11" fill="#e84a8a"/><ellipse cx="124" cy="132" rx="9" ry="11" fill="#e84a8a"/>
+      <circle cx="71" cy="121" r="5" fill="#fff"/><circle cx="119" cy="121" r="5" fill="#fff"/><circle cx="80" cy="137" r="2.5" fill="#fff"/><circle cx="128" cy="137" r="2.5" fill="#fff"/></g>`,
+    happy:`<g fill="none" stroke="var(--hair)" stroke-width="5" stroke-linecap="round"><path d="M63 132 Q76 116 89 132"/><path d="M111 132 Q124 116 137 132"/></g>`,
+    proud:`<g fill="#ffbf1f" stroke="var(--hair)" stroke-width="2.5" stroke-linejoin="round">
+      <path d="M76 112 l5 11 12 1 -9 8 3 12 -11 -6 -11 6 3 -12 -9 -8 12 -1z"/><path d="M124 112 l5 11 12 1 -9 8 3 12 -11 -6 -11 6 3 -12 -9 -8 12 -1z"/></g>`,
+    worried:`<g><ellipse cx="76" cy="130" rx="11" ry="14" fill="var(--hair)"/><ellipse cx="124" cy="130" rx="11" ry="14" fill="var(--hair)"/>
+      <circle cx="72" cy="125" r="4" fill="#fff"/><circle cx="120" cy="125" r="4" fill="#fff"/>
+      <path d="M62 108 L88 114 M138 108 L112 114" stroke="var(--hair)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M150 96 q8 14 0 20 q-8 -6 0 -20z" fill="#7cc8ff" stroke="var(--hair)" stroke-width="2"/></g>`,
+    cry:`<g fill="none" stroke="var(--hair)" stroke-width="5" stroke-linecap="round"><path d="M63 128 L89 134 M63 140 L89 134"/><path d="M137 128 L111 134 M137 140 L111 134"/></g>
+      <path d="M70 142 q-4 18 4 26 q8 -8 2 -26z M130 142 q4 18 -4 26 q-8 -8 -2 -26z" fill="#7cc8ff" stroke="var(--hair)" stroke-width="2"/>`
+  }[mood];
+  const mouth = {
+    normal:`<path d="M93 156 Q100 163 107 156" fill="none" stroke="var(--hair)" stroke-width="3.5" stroke-linecap="round"/>`,
+    happy:`<path d="M88 152 Q100 172 112 152 Z" fill="#c2185b" stroke="var(--hair)" stroke-width="3" stroke-linejoin="round"/><path d="M94 162 Q100 167 106 162" fill="#ff8fb1"/>`,
+    proud:`<path d="M86 151 Q100 176 114 151 Z" fill="#c2185b" stroke="var(--hair)" stroke-width="3" stroke-linejoin="round"/><path d="M90 152 h20 v4 h-20z" fill="#fff"/>`,
+    worried:`<path d="M90 160 q5 -6 10 0 q5 6 10 0" fill="none" stroke="var(--hair)" stroke-width="3.5" stroke-linecap="round"/>`,
+    cry:`<path d="M86 151 Q100 174 114 151 Z" fill="#c2185b" stroke="var(--hair)" stroke-width="3" stroke-linejoin="round"/>`
+  }[mood];
+  return `<svg class="mascot" id="mascot" viewBox="0 0 200 250" role="img" aria-label="נקי-צ׳אן, הדמות שמעודדת אותך">
+    <path d="M30 128 Q20 40 100 34 Q180 40 170 128 L176 200 Q150 186 140 200 L60 200 Q50 186 24 200 Z" fill="var(--hair)" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M52 250 Q54 196 100 192 Q146 196 148 250 Z" fill="#ff3d7f" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M84 196 L100 216 L116 196" fill="#fff" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="100" cy="132" rx="62" ry="58" fill="var(--skin)" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M38 120 Q40 56 100 52 Q160 56 162 120 Q150 92 136 98 L130 78 L118 100 Q106 74 100 72 L92 100 L76 78 L70 100 Q52 92 38 120 Z" fill="var(--hair)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M70 62 Q90 54 108 60" fill="none" stroke="var(--hair-hi)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M100 34 Q96 14 112 8 Q108 22 116 30" fill="var(--hair)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+    <g transform="translate(142 70) rotate(20)"><path d="M0 0 l-14 -10 v20z M0 0 l14 -10 v20z" fill="#ff3d7f" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/><circle r="4" fill="#ffbf1f" stroke="var(--ink)" stroke-width="2"/></g>
+    <ellipse cx="62" cy="152" rx="10" ry="6" fill="#ff8fb1" opacity=".55"/><ellipse cx="138" cy="152" rx="10" ry="6" fill="#ff8fb1" opacity=".55"/>
+    ${eyes}${mouth}
+  </svg>`;
+}
+function moodFor(days){ return days < 1 ? "normal" : days < 7 ? "happy" : days < 30 ? "proud" : "happy"; }
+function lineFor(it){
+  const t = TYPES[it.type];
+  const pool = t.lines.concat(COMMON_LINES);
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+/* ---------- render ---------- */
+let currentLine = "", moodOverride = null;
+function renderTabs(){
+  const tabs = $("#tabs");
+  tabs.innerHTML = state.items.map(it => {
+    const t = TYPES[it.type];
+    return `<button class="tab" role="tab" type="button" data-id="${it.id}" aria-selected="${it.id===active()?.id}">${t.emoji} ${esc(it.name || t.label)}</button>`;
+  }).join("") + `<button class="tab add" type="button" id="addBtn">＋ הוסף התמכרות</button>`;
+}
+function renderMain(){
+  const main = $("#main");
+  const it = active();
+  if (!it){
+    main.innerHTML = `<section class="panel hero"><div class="stage">${mascotSVG("happy")}<div class="bubble"><span class="who">נקי-צ׳אן</span>היי! ספר לי ממה אתה נגמל ואני אספור איתך כל שנייה.</div></div>
+      <div class="counter"><h2 class="name">מתחילים פרק חדש</h2><p>תוסיף את המעקב הראשון שלך. אפשר כמה במקביל: סיגריות, גראס, קריסטל ועוד.</p><div class="actions"><button class="btn sos" type="button" data-act="add">הוסף מעקב</button></div></div></section>`;
+    return;
+  }
+  const t = TYPES[it.type], c = calc(it);
+  if (!currentLine) currentLine = lineFor(it);
+  const mood = moodOverride || moodFor(c.days);
+  const next = t.miles.find(m => c.ms < m[0]);
+  const prevT = [...t.miles].reverse().find(m => c.ms >= m[0])?.[0] || 0;
+  const pct = next ? Math.min(100, (c.ms - prevT) / (next[0] - prevT) * 100) : 100;
+
+  main.innerHTML = `
+  <section class="panel hero">
+    <div class="stage">
+      <div class="bubble" id="bubble" aria-live="polite"><span class="who">נקי-צ׳אן</span><span id="line">${esc(currentLine)}</span></div>
+      ${mascotSVG(mood)}
+    </div>
+    <div class="counter">
+      <div><div class="eyebrow">נקי מ${esc(it.name || t.label)} ${t.emoji} כבר</div><h2 class="name">${durText(c.ms)}</h2></div>
+      <div class="clock" aria-label="זמן נקי">
+        <div class="days"><b id="cD">${Math.floor(c.days)}</b><span>ימים</span></div>
+        <div><b id="cH">00</b><span>שעות</span></div>
+        <div><b id="cM">00</b><span>דקות</span></div>
+        <div><b id="cS">00</b><span>שניות</span></div>
+      </div>
+      <div class="stats">
+        <div class="stat money"><span>כסף שנחסך</span><b id="sMoney">${fmtMoney(c.money)}</b></div>
+        <div class="stat"><span>${t.unit} שלא נצרכו</span><b id="sUnits">${fmtNum(c.units, t.unit==="גרם"?1:0)}</b></div>
+        ${t.lifeMin ? `<div class="stat life"><span>חיים שהרווחת</span><b id="sLife">${lifeText(c.lifeMin)}</b></div>` : `<div class="stat"><span>השיא שלך</span><b>${durText(Math.max(it.best||0,c.ms))}</b></div>`}
+      </div>
+      <div class="actions">
+        <button class="btn sos" type="button" data-act="sos">🆘 יש לי חשק</button>
+        <button class="btn ghost" type="button" data-act="edit">עריכה</button>
+        <button class="btn ghost" type="button" data-act="relapse">מעדתי…</button>
+      </div>
+      <div class="confirm" id="relapseBox" hidden>
+        <span>זה קורה להרבה אנשים בדרך, וזה לא מוחק את מה שלמדת. לאפס את השעון? השיא שלך (${durText(Math.max(it.best||0,c.ms))}) יישמר.</span>
+        <div class="actions"><button class="btn sos" type="button" data-act="reset">כן, מתחיל מחדש</button><button class="btn ghost" type="button" data-act="norelapse">לא, טעות</button></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-title"><h2>מה אפשר לקנות בכסף הזה</h2><small>${fmtMoney(c.money)}</small></div>
+      <div class="buy">${BUY.map(([e,n,p]) => { const k = Math.floor(c.money/p); return `<div class="${k?"":"zero"}"><span class="e">${e}</span><b>${fmtNum(k)}</b><small>${n} (₪${p})</small></div>`; }).join("")}</div>
+      <p class="hint" style="margin-top:10px">בשנה נקייה תחסוך בערך <b>${fmtMoney(365*it.perDay*it.price/it.qty)}</b>.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><h2>מה קורה בגוף</h2><small>הערכות כלליות</small></div>
+      ${next ? `<div class="next"><b>הבא בתור:</b> ${next[1]}<br><small>בעוד ${durText(next[0]-c.ms)}</small><div class="bar"><i style="width:${pct}%"></i></div></div>` : `<div class="next"><b>השלמת את כל אבני הדרך! 🌸</b></div>`}
+      <ul class="miles">${t.miles.map(m => `<li class="${c.ms>=m[0]?"done":""}"><span class="chk">${c.ms>=m[0]?"✓":""}</span><span>${m[1]}<span class="t">${durText(m[0])}</span></span></li>`).join("")}</ul>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-title"><h2>הישגים</h2><small>${BADGES.filter(b=>c.ms>=b[0]).length} מתוך ${BADGES.length}</small></div>
+    <div class="badges">${BADGES.map(([ms,e,n]) => `<div class="badge ${c.ms>=ms?"":"locked"}"><span class="disc">${e}</span><b>${n}</b><span>${c.ms>=ms?"נפתח!":"עוד " + durText(ms-c.ms)}</span></div>`).join("")}</div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title"><h2>הלוח של נקי-צ׳אן</h2><small>כי צחוק עוזר לחשק לעבור</small></div>
+    <div class="stickers">${STICKERS.map(([e,txt,col,r]) => `<figure class="sticker" style="--c:${col};--r:${r};margin:0"><div class="pic" aria-hidden="true">${e}</div><p>${txt}</p></figure>`).join("")}</div>
+  </section>`;
+  checkBadges(it, c);
+}
+function renderTotal(){
+  const sum = state.items.reduce((s,it) => s + calc(it).money, 0);
+  $("#total").innerHTML = `סה״כ נחסך: <b class="num">${fmtMoney(sum)}</b>`;
+}
+function render(){
+  $("#exampleBar").hidden = !state.example;
+  renderTabs(); renderMain(); renderTotal(); tick();
+}
+
+/* live tick: only update the numbers, not the whole DOM */
+let lastDay = -1;
+function tick(){
+  const it = active(); if (!it) return;
+  const c = calc(it), t = TYPES[it.type];
+  const d = Math.floor(c.days);
+  if (lastDay !== -1 && d !== lastDay){ lastDay = d; renderMain(); }
+  lastDay = d;
+  const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set("cD", d); set("cH", pad(Math.floor(c.ms%DAY/HOUR))); set("cM", pad(Math.floor(c.ms%HOUR/MIN))); set("cS", pad(Math.floor(c.ms%MIN/1000)));
+  set("sMoney", fmtMoney(c.money)); set("sUnits", fmtNum(c.units, t.unit==="גרם"?1:0));
+  if (t.lifeMin) set("sLife", lifeText(c.lifeMin));
+  renderTotal();
+}
+setInterval(tick, 1000);
+
+/* ---------- badges + confetti ---------- */
+function checkBadges(it, c){
+  const fresh = BADGES.filter(b => c.ms >= b[0] && !it.seen.includes(b[0]));
+  if (!fresh.length) return;
+  fresh.forEach(b => it.seen.push(b[0]));
+  save();
+  const b = fresh[fresh.length-1];
+  toast(`${b[1]} הישג חדש: ${b[2]}!`);
+  confetti();
+}
+function confetti(){
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = $("#confetti"), ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ["#ff3d7f","#ffbf1f","#00a884","#7cc8ff","#9b7bff"];
+  const ps = Array.from({length:140}, () => ({x:Math.random()*cv.width, y:-20-Math.random()*cv.height*.5, vx:(Math.random()-.5)*3, vy:2+Math.random()*3, r:Math.random()*6.28, s:5+Math.random()*6, c:cols[Math.floor(Math.random()*cols.length)], petal:Math.random()<.4}));
+  let f = 0;
+  (function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p => { p.x += p.vx + Math.sin(f/20+p.r); p.y += p.vy; p.r += .08;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle = p.petal ? "#ffb7cf" : p.c;
+      if (p.petal){ ctx.beginPath(); ctx.ellipse(0,0,p.s,p.s/2,0,0,6.28); ctx.fill(); } else ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);
+      ctx.restore(); });
+    if (++f < 220) requestAnimationFrame(loop); else ctx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+let toastT;
+function toast(msg){
+  document.querySelector(".toast")?.remove();
+  const el = document.createElement("div"); el.className = "toast"; el.textContent = msg; el.setAttribute("role","status");
+  document.body.appendChild(el); clearTimeout(toastT); toastT = setTimeout(() => el.remove(), 3200);
+}
+
+/* ---------- SOS ---------- */
+let breathTimer;
+function openSOS(){
+  const it = active(); const t = TYPES[it.type]; const c = calc(it);
+  moodOverride = "worried"; renderMain();
+  const ov = document.createElement("div"); ov.className = "overlay"; ov.id = "sos";
+  ov.innerHTML = `<div class="panel sosbox" role="dialog" aria-modal="true" aria-labelledby="sosT">
+    <h2 id="sosT">החשק עובר תוך כמה דקות. בוא נעבור אותו ביחד.</h2>
+    <div class="breath" id="breath">נשימה</div>
+    <p style="margin:0">כבר ${durText(c.ms)} נקי וחסכת ${fmtMoney(c.money)}. חבל לזרוק את זה על רגע אחד.</p>
+    <p style="margin:0"><b>משימה:</b> <span id="fun">${FUN[Math.floor(Math.random()*FUN.length)]}</span></p>
+    <div class="help">צריך לדבר עם מישהו עכשיו? <b>ער״ן 1201</b>, עזרה נפשית ראשונה, 24/7.${it.type==="meth"||it.type==="alcohol" ? "<br>בגמילה מ"+t.label+" כדאי ליווי רפואי. רופא המשפחה או קופת החולים יכולים להפנות לטיפול." : ""}</div>
+    <div class="actions" style="justify-content:center"><button class="btn" type="button" id="anotherFun">משימה אחרת</button><button class="btn sos" type="button" id="closeSos">עברתי את זה 💪</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const br = $("#breath"); let phase = 0;
+  const step = () => {
+    const P = [["שאיפה…","in",4000],["להחזיק",null,4000],["נשיפה…","out",6000]][phase%3];
+    br.textContent = P[0]; br.classList.remove("in","out"); if (P[1]) br.classList.add(P[1]); else br.classList.add("in");
+    phase++; breathTimer = setTimeout(step, P[2]);
+  };
+  step();
+  $("#anotherFun").onclick = () => { $("#fun").textContent = FUN[Math.floor(Math.random()*FUN.length)]; };
+  $("#closeSos").onclick = () => closeSOS(true);
+  ov.addEventListener("click", e => { if (e.target === ov) closeSOS(false); });
+  $("#closeSos").focus();
+}
+function closeSOS(win){
+  clearTimeout(breathTimer); $("#sos")?.remove();
+  moodOverride = win ? "proud" : null;
+  currentLine = win ? "ידעתי שתצליח! עוד קרב ניצחת 🏆" : currentLine;
+  renderMain();
+  if (win){ confetti(); setTimeout(() => { moodOverride = null; }, 8000); }
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#sos")) closeSOS(false); });
+
+/* ---------- setup form ---------- */
+let editingId = null;
+$("#fType").innerHTML = Object.entries(TYPES).map(([k,t]) => `<option value="${k}">${t.emoji} ${t.label}</option>`).join("");
+function toLocalInput(ts){ const d = new Date(ts - new Date(ts).getTimezoneOffset()*MIN); return d.toISOString().slice(0,16); }
+function fillDefaults(type){
+  const t = TYPES[type];
+  $("#perDayLbl").textContent = t.perDayLbl; $("#unitLbl").textContent = t.qtyUnit;
+  $("#fPerDay").value = t.perDay; $("#fPrice").value = t.price; $("#fQty").value = t.qty;
+  $("#fHint").textContent = t.hint; $("#fName").placeholder = t.label;
+}
+$("#fType").addEventListener("change", e => fillDefaults(e.target.value));
+function openSetup(id){
+  editingId = id || null;
+  const it = id && state.items.find(i => i.id === id);
+  $("#setupTitle").textContent = it ? "עריכת מעקב" : "מעקב חדש";
+  $("#saveBtn").textContent = it ? "שמירה" : "יאללה, מתחילים";
+  $("#deleteItem").hidden = !it; $("#deleteItem").textContent = "מחק מעקב"; $("#deleteItem").dataset.armed = "";
+  const type = it ? it.type : "cig";
+  $("#fType").value = type; fillDefaults(type);
+  if (it){ $("#fName").value = it.name || ""; $("#fPerDay").value = it.perDay; $("#fPrice").value = it.price; $("#fQty").value = it.qty; }
+  else $("#fName").value = "";
+  $("#fDate").value = toLocalInput(it ? it.start : Date.now());
+  $("#setupPanel").hidden = false;
+  $("#setupPanel").scrollIntoView({behavior:"smooth", block:"start"});
+}
+$("#setup").addEventListener("submit", e => {
+  e.preventDefault();
+  const start = new Date($("#fDate").value).getTime();
+  if (!start || start > Date.now() + MIN){ toast("תאריך ההפסקה לא יכול להיות בעתיד"); return; }
+  const data = { type:$("#fType").value, name:$("#fName").value.trim(), start, perDay:+$("#fPerDay").value, price:+$("#fPrice").value, qty:+$("#fQty").value || 1 };
+  if (editingId){
+    const it = state.items.find(i => i.id === editingId); Object.assign(it, data);
+    it.seen = BADGES.map(b=>b[0]).filter(t => Date.now()-it.start >= t);
+  } else {
+    const it = { id:"i"+Date.now(), best:0, ...data, seen: BADGES.map(b=>b[0]).filter(t => Date.now()-start >= t) };
+    state.items.push(it); state.active = it.id;
+  }
+  save(); $("#setupPanel").hidden = true; currentLine = ""; render();
+  toast(editingId ? "נשמר ✓" : "המעקב התחיל! נקי-צ׳אן איתך 🌸");
+  scrollTo({top:0, behavior:"smooth"});
+});
+$("#cancelSetup").onclick = () => { $("#setupPanel").hidden = true; };
+$("#deleteItem").onclick = e => {
+  const b = e.currentTarget;
+  if (!b.dataset.armed){ b.dataset.armed = "1"; b.textContent = "בטוח? לחץ שוב למחיקה"; return; }
+  state.items = state.items.filter(i => i.id !== editingId);
+  state.active = state.items[0]?.id; save(); $("#setupPanel").hidden = true; render(); toast("המעקב נמחק");
+};
+$("#startMine").onclick = () => { state = { items:[], active:null }; save(); render(); openSetup(); };
+
+/* ---------- event delegation ---------- */
+document.addEventListener("click", e => {
+  const tab = e.target.closest(".tab[data-id]");
+  if (tab){ state.active = tab.dataset.id; save(); currentLine = ""; moodOverride = null; lastDay = -1; render(); return; }
+  if (e.target.closest("#addBtn")) return openSetup();
+  if (e.target.closest("#mascot")){
+    const it = active(); if (!it) return;
+    currentLine = lineFor(it); const l = $("#line"); if (l) l.textContent = currentLine;
+    const m = $("#mascot"); m.classList.remove("bounce"); void m.getBBox(); m.classList.add("bounce");
+    return;
+  }
+  const act = e.target.closest("[data-act]")?.dataset.act; if (!act) return;
+  const it = active();
+  if (act === "add") openSetup();
+  if (act === "sos") openSOS();
+  if (act === "edit") openSetup(it.id);
+  if (act === "relapse") $("#relapseBox").hidden = false;
+  if (act === "norelapse") $("#relapseBox").hidden = true;
+  if (act === "reset"){
+    it.best = Math.max(it.best||0, Date.now()-it.start); it.start = Date.now(); it.seen = [];
+    save(); moodOverride = "cry"; currentLine = "זה בסדר. נופלים וקמים, כמו בכל אנימה טובה. אני עדיין פה איתך 🤍";
+    render(); setTimeout(() => { moodOverride = null; }, 10000);
+  }
+});
+
+render();
+})();
+</script>
+</body>
+</html>
